@@ -1,7 +1,7 @@
 
 ---
 - name: Deploy simple flask application
-  hosts: Aws kali machine
+  hosts: localhost
   become: yes
   tasks:
 
@@ -15,31 +15,32 @@
           - python3-pip
           - git
           - docker.io
-          - docker-compose
         state: present
 
     - name: Clone Flask app repository from GitHub
       git:
         repo: 'https://github.com/VINITGG/Simple_Flask_app.git'
-        dest: '/home/kali/flask_app/deploy'
+        dest: '/home/ubuntu/Simple_Flask_app/Ansible_deploy'
 
     - name: Install Python dependencies
-      pip:
-        requirements: /home/kali/flask_app/requirements.txt
+      command: /home/ubuntu/Simple_Flask_app/venv/bin/pip install -r /home/ubuntu/Simple_Flask_app/requirements.txt
+      args:
+        chdir: /home/ubuntu/Simple_Flask_app
 
     - name: Build the Docker image
       command:
-        cmd: docker-compose -f /home/kali/flask_app/docker-compose.yml build
+        cmd: docker-compose -f /home/ubuntu/Simple_Flask_app/docker-compose.yml build
 
-    - name: Start the Docker container
-      command:
-        cmd: docker-compose -f /home/kali/flask_app/docker-compose.yml up -d
+    - name: Create Docker container using docker run
+      command: "docker run -d --name myapp -p 5000:5000 myapp:3.9-slim"
+      register: result
+
 
     - name: Check Docker container status
       command:
         cmd: docker ps
       register: docker_status
 
-    - name: Display container status
-      debug:
-        var: docker_status
+    - name: Display container activity and CPU utilization
+      command: "timeout 10s docker stats --no-stream"
+      register: result
